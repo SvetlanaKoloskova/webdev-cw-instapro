@@ -1,4 +1,4 @@
-import { getPosts } from "./api.js";
+import { allPostsUser, getPosts } from "./api.js";
 import { renderAddPostPageComponent } from "./components/add-post-page-component.js";
 import { renderAuthPageComponent } from "./components/auth-page-component.js";
 import {
@@ -15,12 +15,14 @@ import {
   removeUserFromLocalStorage,
   saveUserToLocalStorage,
 } from "./helpers.js";
+import { renderPostsUser } from "./components/posts-user.js";
 
 export let user = getUserFromLocalStorage();
 export let page = null;
 export let posts = [];
+export let postsUser = [];
 
-const getToken = () => {
+export const getToken = () => {
   const token = user ? `Bearer ${user.token}` : undefined;
   return token;
 };
@@ -67,11 +69,8 @@ export const goToPage = (newPage, data) => {
     }
 
     if (newPage === USER_POSTS_PAGE) {
-      // TODO: реализовать получение постов юзера из API
-      console.log("Открываю страницу пользователя: ", data.userId);
       page = USER_POSTS_PAGE;
-      posts = [];
-      return renderApp();
+      return renderApp(data);
     }
 
     page = newPage;
@@ -83,7 +82,7 @@ export const goToPage = (newPage, data) => {
   throw new Error("страницы не существует");
 };
 
-const renderApp = () => {
+const renderApp = (data) => {
   const appEl = document.getElementById("app");
   if (page === LOADING_PAGE) {
     return renderLoadingPageComponent({
@@ -109,9 +108,7 @@ const renderApp = () => {
   if (page === ADD_POSTS_PAGE) {
     return renderAddPostPageComponent({
       appEl,
-      onAddPostClick({ description, imageUrl }) {
-        // TODO: реализовать добавление поста в API
-        console.log("Добавляю пост...", { description, imageUrl });
+      onAddPostClick() {
         goToPage(POSTS_PAGE);
       },
     });
@@ -124,10 +121,16 @@ const renderApp = () => {
   }
 
   if (page === USER_POSTS_PAGE) {
-    // TODO: реализовать страницу фотографию пользвателя
-    appEl.innerHTML = "Здесь будет страница фотографий пользователя";
-    return;
+    return allPostsUser({ id: data })
+      .then((allPostsUser) => {
+        postsUser = allPostsUser;
+        return renderPostsUser({ appEl, postsUser })
+      })
   }
 };
+
+export function newPosts(newPost) {
+  posts = newPost;
+}
 
 goToPage(POSTS_PAGE);
